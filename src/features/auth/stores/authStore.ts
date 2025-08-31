@@ -6,6 +6,7 @@ import type { User } from '@supabase/supabase-js'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
+  const initialized = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
 
@@ -86,21 +87,31 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Inicializar o usuário atual
   async function initializeAuth() {
-    // Verificar se há uma sessão ativa
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      user.value = session.user
-    }
+    if (initialized.value) return
 
-    // Escutar mudanças na autenticação
-    supabase.auth.onAuthStateChange((event, session) => {
-      user.value = session?.user ?? null
-    })
+    try {
+      // Verificar se há uma sessão ativa
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        user.value = session.user
+      }
+
+      // Escutar mudanças na autenticação
+      supabase.auth.onAuthStateChange((event, session) => {
+        user.value = session?.user ?? null
+      })
+
+      initialized.value = true
+    } catch (error) {
+      console.error('Erro ao inicializar autenticação:', error)
+      initialized.value = true // Marcar como inicializado mesmo com erro
+    }
   }
 
   return {
     user,
     loading,
+    initialized,
     isAuthenticated,
     signIn,
     signUp,

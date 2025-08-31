@@ -1,58 +1,171 @@
 <template>
-  <div class="flex flex-col h-full">
-    <!-- Sidebar Header -->
-    <div class="flex items-center justify-center h-16 px-4 border-b border-gray-200">
-      <div class="flex items-center space-x-3">
-        <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-          <WrenchScrewdriverIcon class="w-5 h-5 text-white" />
+  <div class="flex flex-col h-full bg-gradient-to-b from-slate-800 via-slate-700 to-slate-800 overflow-hidden">
+    <!-- Sidebar Header - Mais orgânico -->
+    <div class="flex items-center justify-between px-6 py-8 border-b border-slate-600/30 flex-shrink-0">
+      <div class="flex items-center space-x-4 min-w-0">
+        <div class="relative flex-shrink-0">
+          <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+            <WrenchScrewdriverIcon class="w-7 h-7 text-white" />
+          </div>
+          <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-800"></div>
         </div>
-        <div class="min-w-0">
-          <h1 class="text-lg font-bold text-gray-900 truncate">OficinaFrota</h1>
-          <p class="text-xs text-gray-500 truncate">Sistema Corporativo</p>
+        <div class="min-w-0 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">
+          <h1 class="text-xl font-bold text-white tracking-tight">OficinaFrota</h1>
+          <p class="text-sm text-slate-300 font-medium">Sistema Corporativo</p>
         </div>
       </div>
+      
+      <!-- Hamburger Button -->
+      <button
+        @click="$emit('toggle')"
+        class="p-2 text-slate-300 hover:text-white hover:bg-slate-600/50 rounded-lg transition-all duration-200 flex-shrink-0"
+        :class="{ 'rotate-180': collapsed }"
+        :title="collapsed ? 'Expandir sidebar' : 'Minimizar sidebar'"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+        </svg>
+      </button>
     </div>
 
-    <!-- Sidebar Navigation -->
-    <nav class="flex-1 px-3 sm:px-4 py-4 sm:py-6 space-y-1 sm:space-y-2 overflow-y-auto">
-      <router-link
-        v-for="item in navigationItems"
-        :key="item.name"
-        :to="item.href"
-        @click="$emit('close')"
-        :class="[
-          $route.path === item.href
-            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
-          'flex items-center px-3 sm:px-4 py-2 sm:py-3 text-sm font-medium transition-all duration-200 rounded-r-lg'
-        ]"
-      >
-        <component 
-          :is="item.icon" 
-          class="w-5 h-5 mr-3 flex-shrink-0" 
-        />
-        <span class="truncate">{{ item.name }}</span>
-      </router-link>
+    <!-- Sidebar Navigation - Menos simétrico -->
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
+      <div class="mb-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 h-0': collapsed }">Principal</h3>
+        <div class="space-y-1">
+          <router-link
+            v-for="item in mainNavigation"
+            :key="item.name"
+            :to="item.href"
+            @click="$emit('close')"
+            :class="[
+              $route.path === item.href
+                ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-100 border-l-4 border-amber-400 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-600/50 hover:text-white border-l-4 border-transparent',
+              'flex items-center px-4 py-3 text-sm font-medium transition-all duration-300 rounded-r-lg group relative overflow-hidden'
+            ]"
+            :title="collapsed ? item.name : ''"
+          >
+            <component 
+              :is="item.icon" 
+              :class="[
+                $route.path === item.href ? 'text-amber-400' : 'text-slate-400 group-hover:text-white',
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                collapsed ? 'mr-0' : 'mr-3'
+              ]" 
+            />
+            <span class="truncate transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">{{ item.name }}</span>
+            
+            <!-- Tooltip para sidebar colapsado -->
+            <div 
+              v-if="collapsed"
+              class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
+            >
+              {{ item.name }}
+            </div>
+          </router-link>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 h-0': collapsed }">Gestão</h3>
+        <div class="space-y-1">
+          <router-link
+            v-for="item in managementNavigation"
+            :key="item.name"
+            :to="item.href"
+            @click="$emit('close')"
+            :class="[
+              $route.path === item.href
+                ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-100 border-l-4 border-amber-400 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-600/50 hover:text-white border-l-4 border-transparent',
+              'flex items-center px-4 py-3 text-sm font-medium transition-all duration-300 rounded-r-lg group relative overflow-hidden'
+            ]"
+            :title="collapsed ? item.name : ''"
+          >
+            <component 
+              :is="item.icon" 
+              :class="[
+                $route.path === item.href ? 'text-amber-400' : 'text-slate-400 group-hover:text-white',
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                collapsed ? 'mr-0' : 'mr-3'
+              ]" 
+            />
+            <span class="truncate transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">{{ item.name }}</span>
+            
+            <!-- Tooltip para sidebar colapsado -->
+            <div 
+              v-if="collapsed"
+              class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
+            >
+              {{ item.name }}
+            </div>
+          </router-link>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 h-0': collapsed }">Sistema</h3>
+        <div class="space-y-1">
+          <router-link
+            v-for="item in systemNavigation"
+            :key="item.name"
+            :to="item.href"
+            @click="$emit('close')"
+            :class="[
+              $route.path === item.href
+                ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-100 border-l-4 border-amber-400 shadow-lg'
+                : 'text-slate-300 hover:bg-slate-600/50 hover:text-white border-l-4 border-transparent',
+              'flex items-center px-4 py-3 text-sm font-medium transition-all duration-300 rounded-r-lg group relative overflow-hidden'
+            ]"
+            :title="collapsed ? item.name : ''"
+          >
+            <component 
+              :is="item.icon" 
+              :class="[
+                $route.path === item.href ? 'text-amber-400' : 'text-slate-400 group-hover:text-white',
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                collapsed ? 'mr-0' : 'mr-3'
+              ]" 
+            />
+            <span class="truncate transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">{{ item.name }}</span>
+            
+            <!-- Tooltip para sidebar colapsado -->
+            <div 
+              v-if="collapsed"
+              class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50"
+            >
+              {{ item.name }}
+            </div>
+          </router-link>
+        </div>
+      </div>
     </nav>
 
-    <!-- Sidebar Footer -->
-    <div class="p-3 sm:p-4 border-t border-gray-200">
-      <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-          <span class="text-white font-medium text-sm">{{ userInitials }}</span>
+    <!-- Sidebar Footer - Mais humano -->
+    <div class="p-4 border-t border-slate-600/30 flex-shrink-0">
+      <div class="bg-slate-700/50 rounded-xl p-4 backdrop-blur-sm">
+        <div class="flex items-center space-x-3 min-w-0">
+          <div class="relative flex-shrink-0">
+            <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-sm">{{ userInitials }}</span>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-slate-700"></div>
+          </div>
+          <div class="flex-1 min-w-0 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">
+            <p class="text-sm font-semibold text-white truncate">{{ userName }}</p>
+            <p class="text-xs text-slate-300 truncate">{{ userRoleDisplay }}</p>
+          </div>
+          <button
+            @click="$emit('logout')"
+            class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0"
+            :title="collapsed ? 'Sair' : ''"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
-          <p class="text-xs text-gray-500 truncate">{{ userRoleDisplay }}</p>
-        </div>
-        <button
-          @click="$emit('logout')"
-          class="p-1 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-        </button>
       </div>
     </div>
   </div>
@@ -73,16 +186,31 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useAuth } from '@/composables/useAuth'
 
+interface Props {
+  collapsed?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  collapsed: false
+})
+
 const router = useRouter()
 const { userInitials, userName, userRole } = useAuth()
 
-const navigationItems = [
+// Navegação organizada por categorias - mais humano
+const mainNavigation = [
   { name: 'Dashboard', href: '/', icon: ChartBarIcon },
   { name: 'Veículos', href: '/veiculos', icon: TruckIcon },
   { name: 'Ordens de Serviço', href: '/ordens-servico', icon: WrenchScrewdriverIcon },
+]
+
+const managementNavigation = [
   { name: 'Estoque', href: '/estoque', icon: ArchiveBoxIcon },
   { name: 'Oficinas Externas', href: '/oficinas-externas', icon: BuildingOfficeIcon },
   { name: 'Supervisores', href: '/supervisores', icon: UsersIcon },
+]
+
+const systemNavigation = [
   { name: 'Relatórios', href: '/relatorios', icon: ChartPieIcon },
   { name: 'Admin', href: '/admin', icon: CogIcon }
 ]
@@ -100,5 +228,6 @@ const userRoleDisplay = computed(() => {
 defineEmits<{
   close: []
   logout: []
+  toggle: []
 }>()
 </script>

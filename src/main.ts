@@ -12,8 +12,8 @@ app.use(createPinia())
 app.use(VueQueryPlugin)
 app.use(router)
 
-// Carregar usuário atual ao iniciar a aplicação
+// Inicializar autenticação antes de montar a aplicação
 const authStore = useAuthStore()
-authStore.getCurrentUser()
+await authStore.initializeAuth()
 
 app.mount('#app')
