@@ -28,18 +28,81 @@ export function useAuth() {
   })
 
   const userRole = computed(() => {
-    return user.value?.user_metadata?.role || 'usuario'
+    return user.value?.user_metadata?.cargo_nome || 'Usuário'
   })
 
   const userEmail = computed(() => {
     return user.value?.email || ''
   })
 
+  const userMatricula = computed(() => {
+    return user.value?.user_metadata?.matricula || ''
+  })
+
+  const userRegional = computed(() => {
+    return authStore.userRegional
+  })
+
+  const userCargo = computed(() => {
+    return authStore.userCargo
+  })
+
+  const userEstado = computed(() => {
+    return authStore.userEstado
+  })
+
+  const userRegionalDisplay = computed(() => {
+    const regional = userRegional.value
+    const estado = userEstado.value
+    if (!regional || !estado) return ''
+    return `${regional.nome} - ${estado.sigla}`
+  })
+
+  const userCargoDisplay = computed(() => {
+    return userCargo.value?.nome || 'Usuário'
+  })
+
+  // Funções de autorização baseadas em roles
+  const hasRole = (role: string) => {
+    return userRole.value === role
+  }
+
+  const hasAnyRole = (roles: string[]) => {
+    return roles.includes(userRole.value)
+  }
+
+  const isAdmin = computed(() => hasRole('admin'))
+  const isSupervisor = computed(() => hasAnyRole(['admin', 'supervisor']))
+  const isUsuario = computed(() => hasAnyRole(['admin', 'supervisor', 'usuario']))
+
+  // Permissões específicas
+  const canManageUsers = computed(() => isAdmin.value)
+  const canManageVehicles = computed(() => isSupervisor.value)
+  const canManageOrders = computed(() => isSupervisor.value)
+  const canViewReports = computed(() => isSupervisor.value)
+  const canManageInventory = computed(() => isSupervisor.value)
+
   return {
     user,
     userInitials,
     userName,
     userRole,
-    userEmail
+    userEmail,
+    userMatricula,
+    userRegional,
+    userCargo,
+    userEstado,
+    userRegionalDisplay,
+    userCargoDisplay,
+    hasRole,
+    hasAnyRole,
+    isAdmin,
+    isSupervisor,
+    isUsuario,
+    canManageUsers,
+    canManageVehicles,
+    canManageOrders,
+    canViewReports,
+    canManageInventory
   }
 }

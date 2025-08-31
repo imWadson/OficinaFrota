@@ -68,7 +68,8 @@
           >
             <div class="text-right hidden sm:block min-w-0">
               <p class="text-sm font-bold text-slate-900 truncate">{{ userName }}</p>
-              <p class="text-xs text-slate-500 font-medium truncate">{{ userRoleDisplay }}</p>
+              <p class="text-xs text-slate-500 font-medium truncate">{{ userCargoDisplay }}</p>
+              <p class="text-xs text-amber-600 font-medium truncate">{{ userRegionalDisplay }}</p>
             </div>
             <div class="relative flex-shrink-0">
               <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
@@ -95,7 +96,8 @@
                 <div class="min-w-0">
                   <p class="text-sm font-bold text-slate-900 truncate">{{ userName }}</p>
                   <p class="text-xs text-slate-500 font-medium truncate">{{ userEmail }}</p>
-                  <p class="text-xs text-amber-600 font-semibold truncate">{{ userRoleDisplay }}</p>
+                  <p class="text-xs text-amber-600 font-semibold truncate">{{ userCargoDisplay }}</p>
+                  <p class="text-xs text-slate-600 font-medium truncate">{{ userRegionalDisplay }}</p>
                 </div>
               </div>
             </div>
@@ -158,7 +160,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
-const { user, userInitials, userName, userRole, userEmail } = useAuth()
+const { userInitials, userName, userEmail, userRole, userCargoDisplay, userRegionalDisplay } = useAuth()
 
 const userMenuOpen = ref(false)
 

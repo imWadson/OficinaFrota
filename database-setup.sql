@@ -1,5 +1,9 @@
--- SQL para criar todas as tabelas do sistema
--- Execute este script no SQL Editor do Supabase
+-- =====================================================
+-- FROTA GESTOR - SISTEMA CORPORATIVO
+-- =====================================================
+-- Script de configuração do banco de dados
+-- Sistema para gestão de frota e oficina interna
+-- Setor: Energia Elétrica
 
 -- Tabela de veículos
 CREATE TABLE IF NOT EXISTS public.veiculos (
@@ -87,7 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_veiculos_status ON public.veiculos(status);
 CREATE INDEX IF NOT EXISTS idx_pecas_codigo ON public.pecas(codigo);
 CREATE INDEX IF NOT EXISTS idx_oficinas_cnpj ON public.oficinas_externas(cnpj);
 
--- Políticas RLS básicas
+-- Políticas RLS baseadas em roles
 ALTER TABLE public.veiculos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.supervisores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ordens_servico ENABLE ROW LEVEL SECURITY;
@@ -96,49 +100,66 @@ ALTER TABLE public.pecas_usadas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.oficinas_externas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.servicos_externos ENABLE ROW LEVEL SECURITY;
 
--- Política para usuários autenticados (leitura)
-CREATE POLICY "Usuários autenticados podem ler veículos" ON public.veiculos
+-- =========================================
+-- POLÍTICAS DE SEGURANÇA BASEADAS EM ROLES
+-- =========================================
+
+-- Função helper para verificar role do usuário
+CREATE OR REPLACE FUNCTION auth.user_role()
+RETURNS text AS $$
+BEGIN
+  RETURN COALESCE(auth.jwt() ->> 'role', 'usuario');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- VEÍCULOS: Apenas supervisores e admins podem modificar
+CREATE POLICY "Supervisores podem ler veículos" ON public.veiculos
+  FOR SELECT USING (auth.user_role() IN ('admin', 'supervisor', 'usuario'));
+
+CREATE POLICY "Apenas supervisores podem modificar veículos" ON public.veiculos
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
+
+-- SUPERVISORES: Apenas admins podem gerenciar
+CREATE POLICY "Usuários autenticados podem ler supervisores" ON public.supervisores
   FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY  "Usuários autenticados podem ler supervisores" ON public.supervisores
+CREATE POLICY "Apenas admins podem modificar supervisores" ON public.supervisores
+  FOR ALL USING (auth.user_role() = 'admin');
+
+-- ORDENS DE SERVIÇO: Supervisores podem gerenciar, usuários podem ler
+CREATE POLICY "Usuários autenticados podem ler ordens de serviço" ON public.ordens_servico
   FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY  "Usuários autenticados podem ler ordens de serviço" ON public.ordens_servico
-  FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Apenas supervisores podem modificar ordens de serviço" ON public.ordens_servico
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
 
+-- PEÇAS: Supervisores podem gerenciar estoque, usuários podem ler
 CREATE POLICY "Usuários autenticados podem ler peças" ON public.pecas
   FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY  "Usuários autenticados podem ler peças usadas" ON public.pecas_usadas
+CREATE POLICY "Apenas supervisores podem modificar peças" ON public.pecas
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
+
+-- PEÇAS USADAS: Apenas supervisores podem registrar
+CREATE POLICY "Usuários autenticados podem ler peças usadas" ON public.pecas_usadas
   FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY  "Usuários autenticados podem ler oficinas externas" ON public.oficinas_externas
+CREATE POLICY "Apenas supervisores podem modificar peças usadas" ON public.pecas_usadas
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
+
+-- OFICINAS EXTERNAS: Apenas supervisores podem gerenciar
+CREATE POLICY "Usuários autenticados podem ler oficinas externas" ON public.oficinas_externas
   FOR SELECT USING (auth.role() = 'authenticated');
 
+CREATE POLICY "Apenas supervisores podem modificar oficinas externas" ON public.oficinas_externas
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
+
+-- SERVIÇOS EXTERNOS: Apenas supervisores podem gerenciar
 CREATE POLICY "Usuários autenticados podem ler serviços externos" ON public.servicos_externos
   FOR SELECT USING (auth.role() = 'authenticated');
 
--- Política para usuários autenticados (escrita)
-CREATE POLICY  "Usuários autenticados podem modificar veículos" ON public.veiculos
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar supervisores" ON public.supervisores
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar ordens de serviço" ON public.ordens_servico
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar peças" ON public.pecas
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar peças usadas" ON public.pecas_usadas
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar oficinas externas" ON public.oficinas_externas
-  FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Usuários autenticados podem modificar serviços externos" ON public.servicos_externos
-  FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Apenas supervisores podem modificar serviços externos" ON public.servicos_externos
+  FOR ALL USING (auth.user_role() IN ('admin', 'supervisor'));
 
 -- =========================================
 -- DADOS PLACEHOLDER PARA DEMONSTRAÇÃO
@@ -274,3 +295,118 @@ INSERT INTO public.servicos_externos (ordem_servico_id, oficina_externa_id, desc
 (2, 4, 'Rebuild completo da bomba hidráulica principal do sistema Munck. Substituição de vedações e calibração de pressão.', 2850.00, '2024-01-10 08:00:00', '2024-01-14 17:00:00'),
 (1, 2, 'Retífica do cabeçote do motor e substituição de válvulas. Serviço especializado não disponível internamente.', 1875.50, '2024-01-11 09:30:00', '2024-01-12 15:00:00')
 ON CONFLICT DO NOTHING;
+
+-- =====================================================
+-- FROTA GESTOR - SISTEMA CORPORATIVO
+-- =====================================================
+-- Script de configuração do banco de dados
+-- Sistema para gestão de frota e oficina interna
+-- Setor: Energia Elétrica
+
+-- Tabela de Estados
+CREATE TABLE IF NOT EXISTS estados (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome VARCHAR(100) NOT NULL UNIQUE,
+    sigla VARCHAR(2) NOT NULL UNIQUE,
+    ativo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Regionais
+CREATE TABLE IF NOT EXISTS regionais (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome VARCHAR(100) NOT NULL,
+    sigla VARCHAR(20) NOT NULL,
+    estado_id UUID NOT NULL REFERENCES estados(id) ON DELETE CASCADE,
+    ativo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(estado_id, nome)
+);
+
+-- Tabela de Cargos
+CREATE TABLE IF NOT EXISTS cargos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nome VARCHAR(100) NOT NULL UNIQUE,
+    sigla VARCHAR(20) NOT NULL UNIQUE,
+    nivel INTEGER NOT NULL CHECK (nivel >= 1 AND nivel <= 10),
+    ativo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para performance
+CREATE INDEX IF NOT EXISTS idx_regionais_estado_id ON regionais(estado_id);
+CREATE INDEX IF NOT EXISTS idx_regionais_ativo ON regionais(ativo);
+CREATE INDEX IF NOT EXISTS idx_cargos_nivel ON cargos(nivel);
+CREATE INDEX IF NOT EXISTS idx_cargos_ativo ON cargos(ativo);
+
+-- Dados iniciais dos Estados
+INSERT INTO estados (nome, sigla) VALUES
+    ('Piauí', 'PI'),
+    ('Maranhão', 'MA')
+ON CONFLICT (nome) DO NOTHING;
+
+-- Dados iniciais das Regionais
+INSERT INTO regionais (nome, sigla, estado_id) 
+SELECT 
+    r.nome,
+    r.sigla,
+    e.id
+FROM (
+    VALUES 
+        ('Metropolitana', 'MET', 'Piauí'),
+        ('Norte', 'NORTE', 'Piauí'),
+        ('Sul', 'SUL', 'Piauí'),
+        ('Centro Sul', 'CENTRO_SUL', 'Piauí'),
+        ('Noroeste', 'NOROESTE', 'Maranhão'),
+        ('Norte', 'NORTE', 'Maranhão'),
+        ('Sul', 'SUL', 'Maranhão')
+) AS r(nome, sigla, estado_nome)
+JOIN estados e ON e.nome = r.estado_nome
+ON CONFLICT (estado_id, nome) DO NOTHING;
+
+-- Dados iniciais dos Cargos
+INSERT INTO cargos (nome, sigla, nivel) VALUES
+    ('Oficina', 'OFICINA', 1),
+    ('Supervisor', 'SUPERVISOR', 2),
+    ('Gerente', 'GERENTE', 3),
+    ('Coordenador', 'COORDENADOR', 4)
+ON CONFLICT (nome) DO NOTHING;
+
+-- Políticas RLS para regionais e cargos
+ALTER TABLE regionais ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cargos ENABLE ROW LEVEL SECURITY;
+
+-- Política para regionais - todos podem ler
+CREATE POLICY "Regionais são visíveis para todos" ON regionais
+    FOR SELECT USING (true);
+
+-- Política para cargos - todos podem ler
+CREATE POLICY "Cargos são visíveis para todos" ON cargos
+    FOR SELECT USING (true);
+
+-- Função para atualizar updated_at
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Triggers para atualizar updated_at
+CREATE TRIGGER update_estados_updated_at BEFORE UPDATE ON estados
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_regionais_updated_at BEFORE UPDATE ON regionais
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_cargos_updated_at BEFORE UPDATE ON cargos
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Comentários das tabelas
+COMMENT ON TABLE estados IS 'Estados onde a empresa atua';
+COMMENT ON TABLE regionais IS 'Regionais de cada estado';
+COMMENT ON TABLE cargos IS 'Cargos/funções dos usuários no sistema';

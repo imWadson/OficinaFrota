@@ -4,7 +4,7 @@ describe('Login Page', () => {
   })
 
   it('should display login form', () => {
-    cy.get('h2').should('contain', 'Oficina Frota CRM')
+    cy.get('h2').should('contain', 'Frota Gestor')
     cy.get('input[type="email"]').should('be.visible')
     cy.get('input[type="password"]').should('be.visible')
     cy.get('button[type="submit"]').should('contain', 'Entrar')

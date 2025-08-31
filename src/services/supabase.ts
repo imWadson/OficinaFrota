@@ -7,7 +7,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Configurações de segurança para o cliente Supabase
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce', // Mais seguro que implicit flow
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'frota-gestor-web',
+    },
+  },
+})
 
 export type Database = {
   public: {

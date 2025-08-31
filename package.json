@@ -1,7 +1,7 @@
 {
-  "name": "oficina-frota-crm",
+  "name": "frota-gestor",
   "version": "1.0.0",
-  "description": "CRM para oficina interna de frota - setor de energia elétrica",
+  "description": "Sistema corporativo para gestão de frota e oficina interna do setor de energia elétrica",
   "type": "module",
   "scripts": {
     "dev": "vite",

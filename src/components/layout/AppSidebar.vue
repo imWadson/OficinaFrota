@@ -10,7 +10,7 @@
           <div class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-slate-800"></div>
         </div>
         <div class="min-w-0 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">
-          <h1 class="text-xl font-bold text-white tracking-tight">OficinaFrota</h1>
+          <h1 class="text-xl font-bold text-white tracking-tight">Frota Gestor</h1>
           <p class="text-sm text-slate-300 font-medium">Sistema Corporativo</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
-const { userInitials, userName, userRole } = useAuth()
+const { userInitials, userName, userRole, userCargo, userRegional, userCargoDisplay, userRegionalDisplay } = useAuth()
 
 // Navegação organizada por categorias - mais humano
 const mainNavigation = [

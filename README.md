@@ -1,6 +1,10 @@
-# Oficina Frota CRM
+# Frota Gestor
 
-Sistema CRM para gerenciamento de oficina interna de frota do setor de energia elétrica.
+Sistema corporativo para gestão de frota e oficina interna do setor de energia elétrica.
+
+## Descrição
+
+O **Frota Gestor** é uma aplicação web desenvolvida em Vue.js 3 com TypeScript, projetada para gerenciar frotas de veículos e oficinas internas no setor de energia elétrica. O sistema oferece controle completo sobre ordens de serviço, estoque de peças, veículos e supervisores.
 
 ## 🚀 Tecnologias
 
@@ -24,7 +28,7 @@ Sistema CRM para gerenciamento de oficina interna de frota do setor de energia e
 1. **Clone o repositório**
 ```bash
 git clone <repository-url>
-cd oficina-frota-crm
+cd frota-gestor
 ```
 
 2. **Instale as dependências**

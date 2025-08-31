@@ -14,7 +14,7 @@
           <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
           <span class="font-semibold text-amber-600">v1.0.0</span>
           <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
-          <span class="text-slate-500">© {{ new Date().getFullYear() }} OficinaFrota</span>
+          <span class="text-slate-500">© {{ new Date().getFullYear() }} Frota Gestor</span>
         </div>
 
         <!-- Links rápidos -->
