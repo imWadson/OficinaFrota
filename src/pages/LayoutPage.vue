@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth/stores/authStore'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
@@ -48,6 +48,11 @@ const authStore = useAuthStore()
 
 // Menu state
 const mobileMenuOpen = ref(false)
+
+// Inicializar autenticação quando o componente montar
+onMounted(async () => {
+  await authStore.initializeAuth()
+})
 
 async function handleLogout() {
   const result = await authStore.signOut()

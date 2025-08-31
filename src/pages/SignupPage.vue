@@ -347,7 +347,7 @@ async function handleSignup() {
   const result = await authStore.signUp(
     form.value.email,
     form.value.password,
-    { nome: form.value.nome }
+    { nome: form.value.nome, role: 'usuario' }
   )
 
   if (result.success) {

@@ -7,8 +7,15 @@ export function useAuth() {
   const user = computed(() => authStore.user)
   
   const userInitials = computed(() => {
-    if (!user.value?.name) return 'U'
-    return user.value.name
+    if (!user.value?.user_metadata?.nome) {
+      // Fallback para email se não tiver nome
+      if (user.value?.email) {
+        return user.value.email.split('@')[0].substring(0, 2).toUpperCase()
+      }
+      return 'U'
+    }
+    
+    return user.value.user_metadata.nome
       .split(' ')
       .map(n => n[0])
       .join('')
@@ -16,11 +23,23 @@ export function useAuth() {
       .slice(0, 2)
   })
 
-  const userRole = computed(() => user.value?.role || 'Usuário')
+  const userName = computed(() => {
+    return user.value?.user_metadata?.nome || user.value?.email?.split('@')[0] || 'Usuário'
+  })
+
+  const userRole = computed(() => {
+    return user.value?.user_metadata?.role || 'usuario'
+  })
+
+  const userEmail = computed(() => {
+    return user.value?.email || ''
+  })
 
   return {
     user,
     userInitials,
-    userRole
+    userName,
+    userRole,
+    userEmail
   }
 }

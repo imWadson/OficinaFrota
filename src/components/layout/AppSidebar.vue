@@ -42,8 +42,8 @@
           <span class="text-white font-medium text-sm">{{ userInitials }}</span>
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium text-gray-900 truncate">{{ user?.name || 'Usuário' }}</p>
-          <p class="text-xs text-gray-500 truncate">{{ userRole }}</p>
+          <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
+          <p class="text-xs text-gray-500 truncate">{{ userRoleDisplay }}</p>
         </div>
         <button
           @click="$emit('logout')"
@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ChartBarIcon,
@@ -73,7 +74,7 @@ import {
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const { user, userInitials, userRole } = useAuth()
+const { userInitials, userName, userRole } = useAuth()
 
 const navigationItems = [
   { name: 'Dashboard', href: '/', icon: ChartBarIcon },
@@ -85,6 +86,16 @@ const navigationItems = [
   { name: 'Relatórios', href: '/relatorios', icon: ChartPieIcon },
   { name: 'Admin', href: '/admin', icon: CogIcon }
 ]
+
+// Display do role em português
+const userRoleDisplay = computed(() => {
+  const roleMap: Record<string, string> = {
+    'admin': 'Administrador',
+    'supervisor': 'Supervisor',
+    'usuario': 'Usuário'
+  }
+  return roleMap[userRole.value] || 'Usuário'
+})
 
 defineEmits<{
   close: []

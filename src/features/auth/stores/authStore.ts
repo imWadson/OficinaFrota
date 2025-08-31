@@ -28,7 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function signUp(email: string, password: string, metadata?: { nome?: string }) {
+  async function signUp(email: string, password: string, metadata?: { nome?: string; role?: string }) {
     loading.value = true
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -84,6 +84,20 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = currentUser
   }
 
+  // Inicializar o usuário atual
+  async function initializeAuth() {
+    // Verificar se há uma sessão ativa
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      user.value = session.user
+    }
+
+    // Escutar mudanças na autenticação
+    supabase.auth.onAuthStateChange((event, session) => {
+      user.value = session?.user ?? null
+    })
+  }
+
   return {
     user,
     loading,
@@ -91,6 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
     signIn,
     signUp,
     signOut,
-    getCurrentUser
+    getCurrentUser,
+    initializeAuth
   }
 })

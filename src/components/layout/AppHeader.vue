@@ -48,8 +48,8 @@
             class="flex items-center space-x-2 sm:space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div class="text-right hidden sm:block">
-              <p class="text-sm font-medium text-gray-900 truncate">{{ user?.name || 'Usuário' }}</p>
-              <p class="text-xs text-gray-500 truncate">{{ userRole }}</p>
+              <p class="text-sm font-medium text-gray-900 truncate">{{ userName }}</p>
+              <p class="text-xs text-gray-500 truncate">{{ userRoleDisplay }}</p>
             </div>
             <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <span class="text-white font-medium text-sm">{{ userInitials }}</span>
@@ -62,8 +62,8 @@
             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
           >
             <div class="px-4 py-2 border-b border-gray-100 sm:hidden">
-              <p class="text-sm font-medium text-gray-900">{{ user?.name || 'Usuário' }}</p>
-              <p class="text-xs text-gray-500">{{ user?.email || 'usuario@empresa.com' }}</p>
+              <p class="text-sm font-medium text-gray-900">{{ userName }}</p>
+              <p class="text-xs text-gray-500">{{ userEmail }}</p>
             </div>
             <button class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
               Perfil
@@ -97,13 +97,23 @@ interface Props {
 
 const props = defineProps<Props>()
 const router = useRouter()
-const { user, userInitials, userRole } = useAuth()
+const { user, userInitials, userName, userRole, userEmail } = useAuth()
 
 const userMenuOpen = ref(false)
 
 // Computed page info - elimina necessidade de props
 const pageInfo = computed(() => {
   return getPageInfo(router.currentRoute.value.path)
+})
+
+// Display do role em português
+const userRoleDisplay = computed(() => {
+  const roleMap: Record<string, string> = {
+    'admin': 'Administrador',
+    'supervisor': 'Supervisor',
+    'usuario': 'Usuário'
+  }
+  return roleMap[userRole.value] || 'Usuário'
 })
 
 defineEmits<{
