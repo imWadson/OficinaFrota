@@ -18,6 +18,7 @@
           variant="primary" 
           size="lg"
           :icon="PlusIcon"
+          @click="navigateToNovaOS"
         >
           Nova OS
         </BaseButton>
@@ -25,6 +26,7 @@
           variant="outline" 
           size="lg"
           :icon="ChartBarIcon"
+          @click="navigateToRelatorios"
         >
           Relatórios
         </BaseButton>
@@ -166,7 +168,10 @@
         </div>
         <div class="p-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <button class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1">
+            <button 
+              @click="navigateToNovaOS"
+              class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1 cursor-pointer"
+            >
               <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -178,7 +183,10 @@
               </div>
             </button>
 
-            <button class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1">
+            <button 
+              @click="navigateToNovoVeiculo"
+              class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1 cursor-pointer"
+            >
               <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -190,7 +198,10 @@
               </div>
             </button>
 
-            <button class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1">
+            <button 
+              @click="navigateToEstoque"
+              class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1 cursor-pointer"
+            >
               <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -202,7 +213,10 @@
               </div>
             </button>
 
-            <button class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1">
+            <button 
+              @click="navigateToRelatorios"
+              class="group flex items-center p-6 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 transition-all duration-200 transform hover:-translate-y-1 cursor-pointer"
+            >
               <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -222,6 +236,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   ChartBarIcon,
   TruckIcon,
@@ -234,6 +249,9 @@ import {
 import DashboardCard from '@/components/ui/DashboardCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { DashboardService, type DashboardStats, type RecentOS } from '@/services/dashboardService'
+
+// Router
+const router = useRouter()
 
 // Estado reativo
 const isLoading = ref(true)
@@ -290,6 +308,23 @@ const loadDashboardData = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+// Funções de navegação
+const navigateToNovaOS = () => {
+  router.push('/ordens-servico/nova')
+}
+
+const navigateToNovoVeiculo = () => {
+  router.push('/veiculos/novo')
+}
+
+const navigateToEstoque = () => {
+  router.push('/estoque')
+}
+
+const navigateToRelatorios = () => {
+  router.push('/relatorios')
 }
 
 // Carregar dados quando o componente for montado

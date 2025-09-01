@@ -131,7 +131,7 @@
                   <option 
                     v-for="regional in regionaisDisponiveis" 
                     :key="regional.id" 
-                    :value="regional.id"
+                    :value="regional.nome"
                   >
                     {{ regional.nome }}
                   </option>
@@ -171,7 +171,7 @@
                 class="block w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
               >
                 <option value="">Selecione o cargo</option>
-                <option v-for="cargo in cargosDisponiveis" :key="cargo.id" :value="cargo.id">
+                <option v-for="cargo in cargosDisponiveis" :key="cargo.id" :value="cargo.sigla">
                   {{ cargo.nome }}
                 </option>
               </select>
@@ -377,7 +377,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth/stores/authStore'
-import { ESTADOS, CARGOS, SETORES, getCargosPorSetor } from '@/entities/rbac-corrected'
+import { ESTADOS, CARGOS, SETORES, getCargosPorSetor } from '@/entities/rbac'
 import { WrenchScrewdriverIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()

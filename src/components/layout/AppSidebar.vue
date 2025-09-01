@@ -182,7 +182,8 @@ import {
   BuildingOfficeIcon,
   UsersIcon,
   ChartPieIcon,
-  CogIcon
+  CogIcon,
+  DocumentChartBarIcon
 } from '@heroicons/vue/24/outline'
 import { useAuth } from '@/composables/useAuth'
 
@@ -201,6 +202,7 @@ const router = useRouter()
 const mainNavigation = [
   { name: 'Dashboard', href: '/', icon: ChartBarIcon },
   { name: 'Veículos', href: '/veiculos', icon: TruckIcon },
+  { name: 'Estatísticas', href: '/veiculos/estatisticas', icon: ChartPieIcon },
   { name: 'Ordens de Serviço', href: '/ordens-servico', icon: WrenchScrewdriverIcon },
 ]
 
@@ -222,7 +224,8 @@ const managementNavigation = computed(() => {
 })
 
 const systemNavigation = [
-  { name: 'Relatórios', href: '/relatorios', icon: ChartPieIcon },
+  { name: 'Relatórios', href: '/relatorios', icon: DocumentChartBarIcon },
+  { name: 'Auditoria', href: '/auditoria', icon: CogIcon },
 ]
 
 // Display do role em português

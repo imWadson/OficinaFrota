@@ -24,7 +24,7 @@
           </label>
           <select 
             v-model="form.veiculo_id" 
-            :disabled="veiculos.isLoading.value"
+            :disabled="veiculos.isLoading?.value"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             required
           >
@@ -55,27 +55,17 @@
           <p v-if="errors.problema" class="mt-1 text-sm text-red-600">{{ errors.problema }}</p>
         </div>
 
-        <!-- Supervisor de Entrega -->
+        <!-- Criador da OS (usuário atual) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            Supervisor de Entrega *
+            Criador da Ordem de Serviço
           </label>
-          <select 
-            v-model="form.supervisor_entrega_id" 
-            :disabled="supervisores.isLoading.value"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            required
-          >
-            <option value="">Selecione um supervisor</option>
-            <option 
-              v-for="supervisor in supervisores.data.value" 
-              :key="supervisor.id" 
-              :value="supervisor.id"
-            >
-              {{ supervisor.nome }} - {{ supervisor.cargo }}
-            </option>
-          </select>
-          <p v-if="errors.supervisor" class="mt-1 text-sm text-red-600">{{ errors.supervisor }}</p>
+          <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+            {{ userName }} - {{ userCargoDisplay }}
+          </div>
+          <p class="mt-1 text-sm text-gray-500">
+            A ordem será criada em seu nome automaticamente
+          </p>
         </div>
 
         <!-- Mensagem de Erro Geral -->
@@ -107,20 +97,19 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useVeiculos } from '../features/veiculos/hooks/useVeiculos'
-import { useSupervisores } from '../features/supervisores/hooks/useSupervisores'
 import { useOrdensServico } from '../features/ordens-servico/hooks/useOrdensServico'
+import { useAuth } from '../composables/useAuth'
 import BaseButton from '../shared/ui/BaseButton.vue'
 
 const router = useRouter()
 const { veiculos } = useVeiculos()
-const { supervisores } = useSupervisores()
 const { createOrdemServico } = useOrdensServico()
+const { userName, userCargoDisplay } = useAuth()
 
 // Form data
 const form = ref({
   veiculo_id: '',
-  problema_reportado: '',
-  supervisor_entrega_id: ''
+  problema_reportado: ''
 })
 
 // Estados
@@ -128,24 +117,23 @@ const loading = ref(false)
 const errorMessage = ref('')
 const errors = ref({
   veiculo: '',
-  problema: '',
-  supervisor: ''
+  problema: ''
 })
 
 // Computed
 const veiculosAtivos = computed(() => {
-  return veiculos.data.value?.filter(v => v.status === 'ativo') || []
+  if (!veiculos.data?.value) return []
+  return veiculos.data.value.filter(v => v.status === 'ativo') || []
 })
 
 const isFormValid = computed(() => {
   return form.value.veiculo_id && 
-         form.value.problema_reportado.trim() && 
-         form.value.supervisor_entrega_id
+         form.value.problema_reportado.trim()
 })
 
 // Validação
 function validarForm() {
-  errors.value = { veiculo: '', problema: '', supervisor: '' }
+  errors.value = { veiculo: '', problema: '' }
   
   if (!form.value.veiculo_id) {
     errors.value.veiculo = 'Selecione um veículo'
@@ -155,11 +143,7 @@ function validarForm() {
     errors.value.problema = 'Descreva o problema'
   }
   
-  if (!form.value.supervisor_entrega_id) {
-    errors.value.supervisor = 'Selecione um supervisor'
-  }
-  
-  return !errors.value.veiculo && !errors.value.problema && !errors.value.supervisor
+  return !errors.value.veiculo && !errors.value.problema
 }
 
 // Criar OS
@@ -171,9 +155,8 @@ async function criarOS() {
   
   try {
     const osData = {
-      veiculo_id: Number(form.value.veiculo_id),
-      problema_reportado: form.value.problema_reportado.trim(),
-      supervisor_entrega_id: Number(form.value.supervisor_entrega_id)
+      veiculo_id: form.value.veiculo_id, // Manter como string (UUID)
+      problema_reportado: form.value.problema_reportado.trim()
     }
     
     await createOrdemServico.mutateAsync(osData)

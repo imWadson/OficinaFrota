@@ -4,7 +4,11 @@ import { supervisorRepository } from '../../../services/repositories/supervisorR
 export function useSupervisores() {
   const supervisores = useQuery({
     queryKey: ['supervisores'],
-    queryFn: () => supervisorRepository.findAll()
+    queryFn: () => supervisorRepository.findAll(),
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnWindowFocus: false,
+    initialData: []
   })
 
   return {
@@ -16,7 +20,11 @@ export function useSupervisor(id: number) {
   const supervisor = useQuery({
     queryKey: ['supervisores', id],
     queryFn: () => supervisorRepository.findById(id),
-    enabled: !!id
+    enabled: !!id,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnWindowFocus: false,
+    initialData: null
   })
 
   return {

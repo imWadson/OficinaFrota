@@ -31,6 +31,11 @@ const routes = [
         component: () => import('../../pages/VeiculosPage.vue')
       },
       {
+        path: 'veiculos/estatisticas',
+        name: 'EstatisticasVeiculo',
+        component: () => import('../../pages/EstatisticasVeiculoPage.vue')
+      },
+      {
         path: 'ordens-servico',
         name: 'OrdensServico',
         component: () => import('../../pages/OrdensServicoPage.vue')
@@ -65,6 +70,11 @@ const routes = [
         name: 'Relatorios',
         component: () => import('../../pages/RelatoriosPage.vue')
       },
+      {
+        path: 'auditoria',
+        name: 'Auditoria',
+        component: () => import('../../pages/AuditoriaPage.vue')
+      },
 
     ]
   }
@@ -77,12 +87,12 @@ const router = createRouter({
 
 router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const authStore = useAuthStore()
-  
+
   // Aguardar a inicialização da autenticação se ainda não foi inicializada
   if (!authStore.initialized) {
     await authStore.initializeAuth()
   }
-  
+
   if (to.meta.requiresAuth !== false && !authStore.isAuthenticated) {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/signup') && authStore.isAuthenticated) {

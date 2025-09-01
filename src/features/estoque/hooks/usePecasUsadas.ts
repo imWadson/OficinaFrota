@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { pecasUsadasRepository, type PecaUsadaInsert } from '../../../services/repositories/pecasUsadasRepository'
 
-export function usePecasUsadas(ordemServicoId: number) {
+export function usePecasUsadas(ordemServicoId: string) {
   const queryClient = useQueryClient()
 
   const pecasUsadas = useQuery({

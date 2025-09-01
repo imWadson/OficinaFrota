@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { servicosExternosRepository, type ServicoExternoInsert } from '../../../services/repositories/servicosExternosRepository'
 
-export function useServicosExternos(ordemServicoId: number) {
+export function useServicosExternos(ordemServicoId: string) {
   const queryClient = useQueryClient()
 
   const servicosExternos = useQuery({
@@ -18,7 +18,7 @@ export function useServicosExternos(ordemServicoId: number) {
   })
 
   const finalizarServico = useMutation({
-    mutationFn: ({ id, dataRetorno }: { id: number; dataRetorno?: string }) => 
+    mutationFn: ({ id, dataRetorno }: { id: number; dataRetorno?: string }) =>
       servicosExternosRepository.finalizarServico(id, dataRetorno),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servicos-externos', ordemServicoId] })

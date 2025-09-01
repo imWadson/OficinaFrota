@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+
+    
     <!-- Header da Página -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -9,7 +11,10 @@
         </p>
       </div>
       <div class="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-2">
-        <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+        <button 
+          @click="navigateToNovoVeiculo"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
@@ -76,7 +81,10 @@
       empty-description="Não há veículos cadastrados ou que correspondam aos filtros aplicados."
     >
       <template #actions>
-        <button class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+        <button 
+          @click="exportarVeiculos"
+          class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -128,43 +136,33 @@
         </div>
       </template>
     </ResponsiveTable>
+
+    <!-- Modal Novo Veículo -->
+    <NovoVeiculoModal
+      :is-open="modalNovoVeiculo"
+      @close="modalNovoVeiculo = false"
+      @saved="handleVeiculoSalvo"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ResponsiveTable from '@/components/ui/ResponsiveTable.vue'
+import NovoVeiculoModal from '@/components/veiculos/NovoVeiculoModal.vue'
 
-// Dados mockados para exemplo
-const veiculos = ref([
-  {
-    id: 1,
-    placa: 'ABC-1234',
-    modelo: 'Fiat Strada',
-    tipo: 'caminhao',
-    status: 'ativo',
-    ano: 2020,
-    km: 45000
-  },
-  {
-    id: 2,
-    placa: 'DEF-5678',
-    modelo: 'Ford Transit',
-    tipo: 'van',
-    status: 'manutencao',
-    ano: 2019,
-    km: 78000
-  },
-  {
-    id: 3,
-    placa: 'GHI-9012',
-    modelo: 'Honda Civic',
-    tipo: 'carro',
-    status: 'ativo',
-    ano: 2021,
-    km: 25000
-  }
-])
+import { veiculoRepository } from '@/services/repositories/veiculoRepository'
+
+// Router
+const router = useRouter()
+
+// Estado reativo
+const modalNovoVeiculo = ref(false)
+
+// Dados dos veículos
+const veiculos = ref<any[]>([])
+const isLoading = ref(false)
 
 const searchTerm = ref('')
 const selectedType = ref('')
@@ -197,11 +195,54 @@ function clearFilters() {
   selectedStatus.value = ''
 }
 
-function viewVeiculo(veiculo: any) {
-  // Implementar visualização
+// Funções de navegação e ação
+const navigateToNovoVeiculo = () => {
+  modalNovoVeiculo.value = true
 }
 
-function editVeiculo(veiculo: any) {
-  // Implementar edição
+const viewVeiculo = (veiculo: any) => {
+  router.push(`/veiculos/${veiculo.id}`)
 }
+
+const editVeiculo = (veiculo: any) => {
+  router.push(`/veiculos/${veiculo.id}/editar`)
+}
+
+const exportarVeiculos = () => {
+  // Implementar exportação para CSV/Excel
+  const csvContent = [
+    ['Placa', 'Modelo', 'Tipo', 'Status', 'Ano', 'Quilometragem'],
+    ...veiculos.value.map(v => [v.placa, v.modelo, v.tipo, v.status, v.ano, v.quilometragem])
+  ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n')
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `veiculos-${new Date().toISOString().split('T')[0]}.csv`
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+}
+
+const handleVeiculoSalvo = (veiculo: any) => {
+  // Adicionar o novo veículo à lista
+  veiculos.value.unshift(veiculo)
+  modalNovoVeiculo.value = false
+}
+
+// Carregar dados iniciais
+onMounted(async () => {
+  try {
+    isLoading.value = true
+    const veiculosData = await veiculoRepository.findAll()
+    veiculos.value = veiculosData || []
+    console.log('Veículos carregados:', veiculos.value.length)
+  } catch (error) {
+    console.error('Erro ao carregar veículos:', error)
+  } finally {
+    isLoading.value = false
+  }
+})
 </script>

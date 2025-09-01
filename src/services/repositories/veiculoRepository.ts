@@ -2,23 +2,33 @@ import { supabase } from '../supabase'
 import type { Veiculo, VeiculoInsert, VeiculoUpdate } from '../../entities/veiculo'
 
 export const veiculoRepository = {
-  async findAll() {
-    const { data, error } = await supabase
+  async findAll(regionalId?: string) {
+    let query = supabase
       .from('veiculos')
       .select('*')
       .order('placa')
-    
-    if (error) throw error
+
+    if (regionalId) {
+      query = query.eq('regional_id', regionalId)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Erro na query:', error)
+      throw error
+    }
+
     return data as Veiculo[]
   },
 
-  async findById(id: number) {
+  async findById(id: string) {
     const { data, error } = await supabase
       .from('veiculos')
       .select('*')
       .eq('id', id)
       .single()
-    
+
     if (error) throw error
     return data as Veiculo
   },
@@ -29,7 +39,7 @@ export const veiculoRepository = {
       .select('*')
       .eq('placa', placa)
       .single()
-    
+
     if (error) throw error
     return data as Veiculo
   },
@@ -40,29 +50,29 @@ export const veiculoRepository = {
       .insert(veiculo)
       .select()
       .single()
-    
+
     if (error) throw error
     return data as Veiculo
   },
 
-  async update(id: number, veiculo: VeiculoUpdate) {
+  async update(id: string, veiculo: VeiculoUpdate) {
     const { data, error } = await supabase
       .from('veiculos')
       .update(veiculo)
       .eq('id', id)
       .select()
       .single()
-    
+
     if (error) throw error
     return data as Veiculo
   },
 
-  async delete(id: number) {
+  async delete(id: string) {
     const { error } = await supabase
       .from('veiculos')
       .delete()
       .eq('id', id)
-    
+
     if (error) throw error
   },
 
@@ -72,7 +82,7 @@ export const veiculoRepository = {
       .select('*')
       .eq('status', 'manutencao')
       .order('placa')
-    
+
     if (error) throw error
     return data as Veiculo[]
   }

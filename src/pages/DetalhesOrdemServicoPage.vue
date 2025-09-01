@@ -69,10 +69,10 @@
               </dd>
             </div>
             
-            <div v-if="os.supervisor_entrega">
-              <dt class="text-sm font-medium text-gray-500">Supervisor de Entrega</dt>
+            <div v-if="os.criador">
+              <dt class="text-sm font-medium text-gray-500">Criador da OS</dt>
               <dd class="mt-1 text-sm text-gray-900">
-                {{ os.supervisor_entrega?.nome }}
+                {{ os.criador?.nome }} ({{ os.criador?.email }})
               </dd>
             </div>
           </div>
@@ -247,16 +247,25 @@ Remover
       <div class="space-y-6">
         
         <!-- Ações -->
-        <div class="card" v-if="os.status === 'em_andamento'">
+        <div class="card" v-if="os.status !== 'concluida' && os.status !== 'cancelada'">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Ações</h3>
           
           <div class="space-y-3">
             <BaseButton 
+              @click="mostrarModalStatus = true"
+              variant="primary"
+              class="w-full"
+            >
+              🔄 Mudar Status
+            </BaseButton>
+            
+            <BaseButton 
+              v-if="os.status === 'em_andamento'"
               @click="concluirOS"
               :loading="concluindo"
               class="w-full"
             >
-              Concluir OS
+              ✅ Concluir OS
             </BaseButton>
             
             <BaseButton 
@@ -296,6 +305,12 @@ Remover
             </div>
           </div>
         </div>
+
+        <!-- Histórico de Status -->
+        <StatusHistory 
+          :ordem-servico-id="osId"
+          :status-atual="os.status"
+        />
       </div>
     </div>
 
@@ -505,9 +520,18 @@ Enviar
           </div>
         </form>
       </div>
-    </div>
-  </div>
-</template>
+         </div>
+
+     <!-- Modal Mudar Status -->
+     <StatusChangeModal
+       :is-open="mostrarModalStatus"
+       :ordem-servico-id="osId"
+       :status-atual="os?.status || ''"
+       @close="mostrarModalStatus = false"
+       @success="mostrarModalStatus = false"
+     />
+   </div>
+ </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
@@ -519,11 +543,13 @@ import { usePecasUsadas } from '../features/estoque/hooks/usePecasUsadas'
 import { useOficinasExternas } from '../features/oficinas-externas/hooks/useOficinasExternas'
 import { useServicosExternos } from '../features/oficinas-externas/hooks/useServicosExternos'
 import BaseButton from '../shared/ui/BaseButton.vue'
+import StatusHistory from '../components/ui/StatusHistory.vue'
+import StatusChangeModal from '../components/ui/StatusChangeModal.vue'
 import { format, differenceInDays, differenceInHours } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 const route = useRoute()
-const osId = Number(route.params.id)
+const osId = route.params.id as string
 
 const { ordemServico, updateOrdemServico } = useOrdemServico(osId)
 const { supervisores } = useSupervisores()
@@ -562,6 +588,9 @@ const formOficina = ref({
   telefone_oficina: '',
   contato_oficina: ''
 })
+
+// Estados do modal de status
+const mostrarModalStatus = ref(false)
 
 // Computed
 const os = computed(() => ordemServico.data.value)
@@ -616,6 +645,14 @@ function getStatusClass(status: string) {
       return 'bg-green-100 text-green-800'
     case 'cancelada':
       return 'bg-red-100 text-red-800'
+    case 'oficina_externa':
+      return 'bg-purple-100 text-purple-800'
+    case 'aguardando_peca':
+      return 'bg-orange-100 text-orange-800'
+    case 'diagnostico':
+      return 'bg-blue-100 text-blue-800'
+    case 'aguardando_aprovacao':
+      return 'bg-indigo-100 text-indigo-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }
@@ -629,6 +666,14 @@ function getStatusText(status: string) {
       return 'Concluída'
     case 'cancelada':
       return 'Cancelada'
+    case 'oficina_externa':
+      return 'Oficina Externa'
+    case 'aguardando_peca':
+      return 'Aguardando Peça'
+    case 'diagnostico':
+      return 'Diagnóstico'
+    case 'aguardando_aprovacao':
+      return 'Aguardando Aprovação'
     default:
       return status
   }

@@ -1,5 +1,5 @@
 import { supabase } from '../supabase'
-import type { OrdemServico, OrdemServicoInsert, OrdemServicoUpdate } from '../../entities/ordemServico'
+import type { OrdemServico, OrdemServicoInsert, OrdemServicoUpdate, OrdemServicoStatusHistory, TempoPorStatus } from '../../entities/ordemServico'
 
 export const ordemServicoRepository = {
   async findAll() {
@@ -7,7 +7,8 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo)
+        veiculos(placa, modelo),
+        criador:usuarios!criado_por(nome, email)
       `)
       .order('data_entrada', { ascending: false })
     
@@ -15,12 +16,13 @@ export const ordemServicoRepository = {
     return data
   },
 
-  async findById(id: number) {
+  async findById(id: string) {
     const { data, error } = await supabase
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo)
+        veiculos(placa, modelo),
+        criador:usuarios!criado_por(nome, email)
       `)
       .eq('id', id)
       .single()
@@ -29,12 +31,13 @@ export const ordemServicoRepository = {
     return data
   },
 
-  async findByVeiculo(veiculoId: number) {
+  async findByVeiculo(veiculoId: string) {
     const { data, error } = await supabase
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo)
+        veiculos(placa, modelo),
+        criador:usuarios!criado_por(nome, email)
       `)
       .eq('veiculo_id', veiculoId)
       .order('data_entrada', { ascending: false })
@@ -44,18 +47,42 @@ export const ordemServicoRepository = {
   },
 
   async create(ordemServico: OrdemServicoInsert) {
+    // Obter o usuário atual
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    // Buscar o ID do usuário na tabela usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    if (userError || !userData) {
+      throw new Error('Usuário não encontrado na base de dados')
+    }
+
+    // Preparar dados da OS com o criador
+    const osData = {
+      ...ordemServico,
+      criado_por: userData.id
+    }
+
     // Usar transação para criar OS e atualizar status do veículo
     const { data, error } = await supabase.rpc('criar_ordem_servico', {
       p_veiculo_id: ordemServico.veiculo_id,
       p_problema_reportado: ordemServico.problema_reportado,
-      p_supervisor_entrega_id: ordemServico.supervisor_entrega_id
+      p_supervisor_entrega_id: ordemServico.supervisor_entrega_id,
+      p_criado_por: userData.id
     })
     
     if (error) {
       // Fallback: criar sem mudança automática de status
       const { data: osData, error: osError } = await supabase
         .from('ordens_servico')
-        .insert(ordemServico)
+        .insert(osData)
         .select()
         .single()
       
@@ -73,7 +100,7 @@ export const ordemServicoRepository = {
     return data as OrdemServico
   },
 
-  async update(id: number, ordemServico: OrdemServicoUpdate) {
+  async update(id: string, ordemServico: OrdemServicoUpdate) {
     const { data, error } = await supabase
       .from('ordens_servico')
       .update(ordemServico)
@@ -95,7 +122,7 @@ export const ordemServicoRepository = {
     return data as OrdemServico
   },
 
-  async concluir(id: number, supervisorRetiradaId: number) {
+  async concluir(id: string, supervisorRetiradaId: string) {
     const { data, error } = await supabase
       .from('ordens_servico')
       .update({
@@ -116,7 +143,8 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo)
+        veiculos(placa, modelo),
+        criador:usuarios!criado_por(nome, email)
       `)
       .eq('status', 'em_andamento')
       .order('data_entrada')
@@ -130,12 +158,92 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo)
+        veiculos(placa, modelo),
+        criador:usuarios!criado_por(nome, email)
       `)
       .eq('status', 'concluida')
       .order('data_saida', { ascending: false })
     
     if (error) throw error
     return data
+  },
+
+  // Novos métodos para histórico de status
+  async getStatusHistory(ordemServicoId: string): Promise<OrdemServicoStatusHistory[]> {
+    const { data, error } = await supabase
+      .from('ordens_servico_status_history')
+      .select(`
+        *,
+        usuario:usuarios!criado_por(nome, email)
+      `)
+      .eq('ordem_servico_id', ordemServicoId)
+      .order('criado_em', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getTempoPorStatus(ordemServicoId: string): Promise<TempoPorStatus[]> {
+    const { data, error } = await supabase
+      .rpc('calcular_tempo_por_status', {
+        p_ordem_servico_id: ordemServicoId
+      })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getTempoTotal(ordemServicoId: string): Promise<string> {
+    const { data, error } = await supabase
+      .rpc('calcular_tempo_total_os', {
+        p_ordem_servico_id: ordemServicoId
+      })
+    
+    if (error) throw error
+    return data || '0'
+  },
+
+  // Método para mudar status com observação
+  async mudarStatus(id: string, novoStatus: string, observacao?: string) {
+    // Obter o usuário atual
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      throw new Error('Usuário não autenticado')
+    }
+
+    // Buscar o ID do usuário na tabela usuarios
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    if (userError || !userData) {
+      throw new Error('Usuário não encontrado na base de dados')
+    }
+
+    // Atualizar status da OS
+    const { data, error } = await supabase
+      .from('ordens_servico')
+      .update({ status: novoStatus })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+
+    // Registrar no histórico manualmente se necessário
+    if (observacao) {
+      await supabase
+        .from('ordens_servico_status_history')
+        .insert({
+          ordem_servico_id: id,
+          status_novo: novoStatus,
+          observacao,
+          criado_por: userData.id
+        })
+    }
+    
+    return data as OrdemServico
   }
 }
