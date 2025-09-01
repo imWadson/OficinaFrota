@@ -2,16 +2,18 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../../../services/supabase'
 import type { User } from '@supabase/supabase-js'
-import { ESTADOS, CARGOS, type Regional, type Cargo } from '../../../entities/regional'
+import { ESTADOS, CARGOS, SETORES, type Regional, type Cargo, type Setor } from '../../../entities/rbac-corrected'
 
 export interface UserMetadata {
   nome: string
   matricula: string
   regional_id: string
   cargo_id: string
+  setor: string
   estado: string
   regional_nome: string
   cargo_nome: string
+  setor_nome: string
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -39,6 +41,11 @@ export const useAuthStore = defineStore('auth', () => {
   const userCargo = computed(() => {
     if (!userMetadata.value?.cargo_id) return null
     return CARGOS.find(cargo => cargo.id === userMetadata.value?.cargo_id)
+  })
+
+  const userSetor = computed(() => {
+    if (!userMetadata.value?.setor) return null
+    return SETORES.find(setor => setor.sigla === userMetadata.value?.setor)
   })
 
   const userEstado = computed(() => {
@@ -107,6 +114,34 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) throw error
       
       user.value = data.user
+      
+      // Verificar se o usuário existe na tabela usuarios
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('auth_user_id', data.user.id)
+        .single()
+      
+      // Se não existe, criar com dados do metadata
+      if (!userData && data.user.user_metadata) {
+        const metadata = data.user.user_metadata as UserMetadata
+        const { error: insertError } = await supabase
+          .from('usuarios')
+          .insert({
+            auth_user_id: data.user.id,
+            nome: metadata.nome || 'Usuário',
+            email: data.user.email || '',
+            matricula: metadata.matricula || 'N/A',
+            cargo_id: metadata.cargo_id,
+            regional_id: metadata.regional_id,
+            ativo: true
+          })
+        
+        if (insertError) {
+          console.error('Erro ao criar usuário na tabela:', insertError)
+        }
+      }
+      
       loginAttempts.value = 0 // Reset on success
       return { success: true }
     } catch (error) {
@@ -124,6 +159,7 @@ export const useAuthStore = defineStore('auth', () => {
       matricula: string
       regional_id: string
       cargo_id: string
+      setor: string
     }
   ) {
     // Validação de senha
@@ -143,12 +179,13 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
 
-    // Buscar dados da regional e cargo
+    // Buscar dados da regional, cargo e setor
     const regional = ESTADOS
       .flatMap(estado => estado.regionais)
       .find(r => r.id === metadata.regional_id)
     
     const cargo = CARGOS.find(c => c.id === metadata.cargo_id)
+    const setor = SETORES.find(s => s.sigla === metadata.setor)
 
     if (!regional) {
       return {
@@ -161,6 +198,13 @@ export const useAuthStore = defineStore('auth', () => {
       return {
         success: false,
         error: 'Cargo selecionado é inválido'
+      }
+    }
+
+    if (!setor) {
+      return {
+        success: false,
+        error: 'Setor selecionado é inválido'
       }
     }
 
@@ -179,7 +223,8 @@ export const useAuthStore = defineStore('auth', () => {
             ...metadata,
             estado: estado?.nome,
             regional_nome: regional.nome,
-            cargo_nome: cargo.nome
+            cargo_nome: cargo.nome,
+            setor_nome: setor.nome
           }
         }
       })
@@ -198,7 +243,46 @@ export const useAuthStore = defineStore('auth', () => {
       // Se foi criado e já está logado (confirmação automática)
       if (data.user && data.session) {
         user.value = data.user
+        
+        // Criar registro na tabela usuarios
+        const { error: userError } = await supabase
+          .from('usuarios')
+          .insert({
+            auth_user_id: data.user.id,
+            nome: metadata.nome,
+            email: email,
+            matricula: metadata.matricula,
+            cargo_id: metadata.cargo_id,
+            regional_id: metadata.regional_id,
+            ativo: true
+          })
+        
+        if (userError) {
+          console.error('Erro ao criar usuário na tabela:', userError)
+          // Não falhar o cadastro, mas logar o erro
+        }
+        
         return { success: true, message: 'Conta criada com sucesso!' }
+      }
+      
+      // Se precisa confirmação, criar o registro quando confirmar
+      if (data.user && !data.session) {
+        // Criar registro na tabela usuarios mesmo sem sessão
+        const { error: userError } = await supabase
+          .from('usuarios')
+          .insert({
+            auth_user_id: data.user.id,
+            nome: metadata.nome,
+            email: email,
+            matricula: metadata.matricula,
+            cargo_id: metadata.cargo_id,
+            regional_id: metadata.regional_id,
+            ativo: true
+          })
+        
+        if (userError) {
+          console.error('Erro ao criar usuário na tabela:', userError)
+        }
       }
       
       return { success: true, message: 'Conta criada com sucesso!' }
@@ -252,19 +336,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return {
-    user,
-    loading,
-    initialized,
-    isAuthenticated,
-    userMetadata,
-    userRegional,
-    userCargo,
-    userEstado,
-    signIn,
-    signUp,
-    signOut,
-    getCurrentUser,
-    initializeAuth
-  }
+      return {
+      user,
+      loading,
+      initialized,
+      isAuthenticated,
+      userMetadata,
+      userRegional,
+      userCargo,
+      userSetor,
+      userEstado,
+      signIn,
+      signUp,
+      signOut,
+      getCurrentUser,
+      initializeAuth
+    }
 })

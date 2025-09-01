@@ -14,12 +14,7 @@ const routes = [
     component: () => import('../../pages/SignupPage.vue'),
     meta: { requiresAuth: false }
   },
-  {
-    path: '/admin-setup',
-    name: 'AdminSetup',
-    component: () => import('../../pages/AdminPage.vue'),
-    meta: { requiresAuth: false }
-  },
+
   {
     path: '/',
     component: () => import('../../pages/LayoutPage.vue'),
@@ -70,12 +65,7 @@ const routes = [
         name: 'Relatorios',
         component: () => import('../../pages/RelatoriosPage.vue')
       },
-      {
-        path: 'admin',
-        name: 'Admin',
-        component: () => import('../../pages/AdminPage.vue'),
-        meta: { requiresAuth: false }
-      }
+
     ]
   }
 ]

@@ -38,7 +38,7 @@ import {
 interface Trend {
   type: 'positive' | 'negative' | 'warning'
   value: string
-  icon: any
+  icon?: any
 }
 
 interface Props {

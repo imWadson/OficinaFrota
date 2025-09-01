@@ -7,9 +7,7 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo),
-        supervisor_entrega:supervisores!ordens_servico_supervisor_entrega_id_fkey(nome),
-        supervisor_retirada:supervisores!ordens_servico_supervisor_retirada_id_fkey(nome)
+        veiculos(placa, modelo)
       `)
       .order('data_entrada', { ascending: false })
     
@@ -22,9 +20,7 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo),
-        supervisor_entrega:supervisores!ordens_servico_supervisor_entrega_id_fkey(nome),
-        supervisor_retirada:supervisores!ordens_servico_supervisor_retirada_id_fkey(nome)
+        veiculos(placa, modelo)
       `)
       .eq('id', id)
       .single()
@@ -38,9 +34,7 @@ export const ordemServicoRepository = {
       .from('ordens_servico')
       .select(`
         *,
-        veiculos(placa, modelo),
-        supervisor_entrega:supervisores!ordens_servico_supervisor_entrega_id_fkey(nome),
-        supervisor_retirada:supervisores!ordens_servico_supervisor_retirada_id_fkey(nome)
+        veiculos(placa, modelo)
       `)
       .eq('veiculo_id', veiculoId)
       .order('data_entrada', { ascending: false })

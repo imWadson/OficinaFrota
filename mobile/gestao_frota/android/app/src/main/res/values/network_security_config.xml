@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="network_security_config">
+        &lt;network-security-config&gt;
+            &lt;domain-config cleartextTrafficPermitted="true"&gt;
+                &lt;domain includeSubdomains="true"&gt;rosqtcptnvpaaieqdiok.supabase.co&lt;/domain&gt;
+                &lt;domain includeSubdomains="true"&gt;supabase.co&lt;/domain&gt;
+                &lt;domain includeSubdomains="true"&gt;supabase.com&lt;/domain&gt;
+            &lt;/domain-config&gt;
+            &lt;base-config cleartextTrafficPermitted="false"&gt;
+                &lt;trust-anchors&gt;
+                    &lt;certificates src="system"/&gt;
+                &lt;/trust-anchors&gt;
+            &lt;/base-config&gt;
+        &lt;/network-security-config&gt;
+    </string>
+</resources> 

@@ -154,7 +154,7 @@
           </div>
           <div class="flex-1 min-w-0 transition-all duration-300 overflow-hidden" :class="{ 'opacity-0 w-0': collapsed }">
             <p class="text-sm font-semibold text-white truncate">{{ userName }}</p>
-            <p class="text-xs text-slate-300 truncate">{{ userRoleDisplay }}</p>
+            <p class="text-xs text-slate-300 truncate">{{ userRole }}</p>
           </div>
           <button
             @click="$emit('logout')"
@@ -195,24 +195,34 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const router = useRouter()
-const { userInitials, userName, userRole, userCargo, userRegional, userCargoDisplay, userRegionalDisplay } = useAuth()
+ const { userInitials, userName, userEmail, userRole, userCargoDisplay, userRegionalDisplay } = useAuth()
 
-// Navegação organizada por categorias - mais humano
+
 const mainNavigation = [
   { name: 'Dashboard', href: '/', icon: ChartBarIcon },
   { name: 'Veículos', href: '/veiculos', icon: TruckIcon },
   { name: 'Ordens de Serviço', href: '/ordens-servico', icon: WrenchScrewdriverIcon },
 ]
 
-const managementNavigation = [
-  { name: 'Estoque', href: '/estoque', icon: ArchiveBoxIcon },
-  { name: 'Oficinas Externas', href: '/oficinas-externas', icon: BuildingOfficeIcon },
-  { name: 'Supervisores', href: '/supervisores', icon: UsersIcon },
-]
+const managementNavigation = computed(() => {
+  const baseItems = [
+    { name: 'Estoque', href: '/estoque', icon: ArchiveBoxIcon },
+    { name: 'Oficinas Externas', href: '/oficinas-externas', icon: BuildingOfficeIcon },
+  ]
+  
+  // Adicionar Supervisores apenas para cargos com nível 4+ (Gerente, Coordenador, Diretor)
+  const userCargo = userCargoDisplay.value
+  const canManageSupervisors = ['Gerente', 'Coordenador', 'Diretor'].includes(userCargo)
+  
+  if (canManageSupervisors) {
+    baseItems.push({ name: 'Supervisores', href: '/supervisores', icon: UsersIcon })
+  }
+  
+  return baseItems
+})
 
 const systemNavigation = [
   { name: 'Relatórios', href: '/relatorios', icon: ChartPieIcon },
-  { name: 'Admin', href: '/admin', icon: CogIcon }
 ]
 
 // Display do role em português

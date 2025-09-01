@@ -198,10 +198,10 @@ function clearFilters() {
 }
 
 function viewVeiculo(veiculo: any) {
-  console.log('Ver veículo:', veiculo)
+  // Implementar visualização
 }
 
 function editVeiculo(veiculo: any) {
-  console.log('Editar veículo:', veiculo)
+  // Implementar edição
 }
 </script>

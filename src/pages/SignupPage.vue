@@ -94,8 +94,8 @@
               </div>
             </div>
 
-            <!-- Regional e Cargo -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Regional, Setor e Cargo -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <!-- Estado -->
               <div>
                 <label for="estado" class="block text-sm font-semibold text-slate-700 mb-2">
@@ -137,6 +137,25 @@
                   </option>
                 </select>
               </div>
+
+              <!-- Setor -->
+              <div>
+                <label for="setor" class="block text-sm font-semibold text-slate-700 mb-2">
+                  Setor
+                </label>
+                <select
+                  id="setor"
+                  v-model="form.setor"
+                  @change="form.cargo_id = ''"
+                  required
+                  class="block w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200"
+                >
+                  <option value="">Selecione o setor</option>
+                  <option v-for="setor in SETORES" :key="setor.id" :value="setor.sigla">
+                    {{ setor.nome }}
+                  </option>
+                </select>
+              </div>
             </div>
 
             <!-- Cargo -->
@@ -148,10 +167,11 @@
                 id="cargo"
                 v-model="form.cargo_id"
                 required
-                class="block w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200"
+                :disabled="!form.setor"
+                class="block w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
               >
                 <option value="">Selecione o cargo</option>
-                <option v-for="cargo in CARGOS" :key="cargo.id" :value="cargo.id">
+                <option v-for="cargo in cargosDisponiveis" :key="cargo.id" :value="cargo.id">
                   {{ cargo.nome }}
                 </option>
               </select>
@@ -357,7 +377,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth/stores/authStore'
-import { ESTADOS, CARGOS } from '@/entities/regional'
+import { ESTADOS, CARGOS, SETORES, getCargosPorSetor } from '@/entities/rbac-corrected'
 import { WrenchScrewdriverIcon } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -369,6 +389,7 @@ const form = ref({
   matricula: '',
   estado: '',
   regional_id: '',
+  setor: '',
   cargo_id: '',
   password: '',
   confirmPassword: '',
@@ -387,12 +408,18 @@ const regionaisDisponiveis = computed(() => {
   return estado?.regionais || []
 })
 
+const cargosDisponiveis = computed(() => {
+  if (!form.value.setor) return []
+  return getCargosPorSetor(form.value.setor)
+})
+
 const isFormValid = computed(() => {
   return form.value.nome.trim() !== '' &&
          form.value.email.trim() !== '' &&
          form.value.matricula.trim() !== '' &&
          form.value.estado !== '' &&
          form.value.regional_id !== '' &&
+         form.value.setor !== '' &&
          form.value.cargo_id !== '' &&
          form.value.password.length >= 8 &&
          form.value.password === form.value.confirmPassword &&
@@ -434,7 +461,8 @@ async function handleSignup() {
         nome: form.value.nome,
         matricula: form.value.matricula,
         regional_id: form.value.regional_id,
-        cargo_id: form.value.cargo_id
+        cargo_id: form.value.cargo_id,
+        setor: form.value.setor
       }
     )
 
