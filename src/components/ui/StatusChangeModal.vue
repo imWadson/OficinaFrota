@@ -6,7 +6,7 @@
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">✕</button>
       </div>
       
-      <form @submit.prevent="mudarStatus" class="space-y-4">
+      <form @submit.prevent="handleMudarStatus" class="space-y-4">
         <!-- Status Atual -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Status Atual</label>
@@ -90,7 +90,7 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { mudarStatus } = useMudarStatus()
+const { mudarStatus: mudarStatusMutation } = useMudarStatus()
 
 // Form data
 const form = ref({
@@ -164,14 +164,14 @@ function getStatusText(status: string): string {
   return statusMap[status] || status
 }
 
-async function mudarStatus() {
+async function handleMudarStatus() {
   if (!form.value.novoStatus) return
   
   loading.value = true
   errorMessage.value = ''
   
   try {
-    await mudarStatus.mutateAsync({
+    await mudarStatusMutation.mutateAsync({
       id: props.ordemServicoId,
       novoStatus: form.value.novoStatus,
       observacao: form.value.observacao.trim() || undefined

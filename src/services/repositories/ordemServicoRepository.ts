@@ -11,7 +11,7 @@ export const ordemServicoRepository = {
         criador:usuarios!criado_por(nome, email)
       `)
       .order('data_entrada', { ascending: false })
-    
+
     if (error) throw error
     return data
   },
@@ -26,7 +26,7 @@ export const ordemServicoRepository = {
       `)
       .eq('id', id)
       .single()
-    
+
     if (error) throw error
     return data
   },
@@ -41,7 +41,7 @@ export const ordemServicoRepository = {
       `)
       .eq('veiculo_id', veiculoId)
       .order('data_entrada', { ascending: false })
-    
+
     if (error) throw error
     return data
   },
@@ -70,23 +70,45 @@ export const ordemServicoRepository = {
       criado_por: userData.id
     }
 
-    // Usar transação para criar OS e atualizar status do veículo
-    const { data, error } = await supabase.rpc('criar_ordem_servico', {
+    // Tentar usar a função RPC primeiro
+    const { data: rpcData, error: rpcError } = await supabase.rpc('criar_ordem_servico', {
       p_veiculo_id: ordemServico.veiculo_id,
       p_problema_reportado: ordemServico.problema_reportado,
-      p_supervisor_entrega_id: ordemServico.supervisor_entrega_id,
+      p_supervisor_entrega_id: ordemServico.supervisor_entrega_id || null,
       p_criado_por: userData.id
     })
-    
-    if (error) {
-      // Fallback: criar sem mudança automática de status
-      const { data: osData, error: osError } = await supabase
+
+    if (rpcError) {
+      console.warn('Função RPC não disponível, usando fallback:', rpcError)
+      
+      // Gerar número da OS para o fallback
+      const hoje = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+      
+      // Buscar última OS do dia de forma mais robusta
+      const { data: ultimasOS } = await supabase
         .from('ordens_servico')
-        .insert(osData)
+        .select('numero_os')
+        .ilike('numero_os', `OS-${hoje}-%`)
+        .order('numero_os', { ascending: false })
+        .limit(1)
+      
+      let numeroOS = `OS-${hoje}-0001`
+      if (ultimasOS && ultimasOS.length > 0 && ultimasOS[0]?.numero_os) {
+        const ultimoNumero = parseInt(ultimasOS[0].numero_os.slice(-4))
+        numeroOS = `OS-${hoje}-${String(ultimoNumero + 1).padStart(4, '0')}`
+      }
+      
+      // Fallback: criar sem mudança automática de status
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('ordens_servico')
+        .insert({
+          ...osData,
+          numero_os: numeroOS
+        })
         .select()
         .single()
       
-      if (osError) throw osError
+      if (fallbackError) throw fallbackError
       
       // Atualizar status do veículo manualmente
       await supabase
@@ -94,10 +116,10 @@ export const ordemServicoRepository = {
         .update({ status: 'manutencao' })
         .eq('id', ordemServico.veiculo_id)
       
-      return osData as OrdemServico
+      return fallbackData as OrdemServico
     }
-    
-    return data as OrdemServico
+
+    return rpcData as OrdemServico
   },
 
   async update(id: string, ordemServico: OrdemServicoUpdate) {
@@ -107,9 +129,9 @@ export const ordemServicoRepository = {
       .eq('id', id)
       .select()
       .single()
-    
+
     if (error) throw error
-    
+
     // Se a OS foi concluída, atualizar status do veículo para ativo
     if (ordemServico.status === 'concluida') {
       const veiculoId = data.veiculo_id
@@ -118,7 +140,7 @@ export const ordemServicoRepository = {
         .update({ status: 'ativo' })
         .eq('id', veiculoId)
     }
-    
+
     return data as OrdemServico
   },
 
@@ -133,7 +155,7 @@ export const ordemServicoRepository = {
       .eq('id', id)
       .select()
       .single()
-    
+
     if (error) throw error
     return data as OrdemServico
   },
@@ -148,7 +170,7 @@ export const ordemServicoRepository = {
       `)
       .eq('status', 'em_andamento')
       .order('data_entrada')
-    
+
     if (error) throw error
     return data
   },
@@ -163,7 +185,7 @@ export const ordemServicoRepository = {
       `)
       .eq('status', 'concluida')
       .order('data_saida', { ascending: false })
-    
+
     if (error) throw error
     return data
   },
@@ -178,7 +200,7 @@ export const ordemServicoRepository = {
       `)
       .eq('ordem_servico_id', ordemServicoId)
       .order('criado_em', { ascending: true })
-    
+
     if (error) throw error
     return data || []
   },
@@ -188,7 +210,7 @@ export const ordemServicoRepository = {
       .rpc('calcular_tempo_por_status', {
         p_ordem_servico_id: ordemServicoId
       })
-    
+
     if (error) throw error
     return data || []
   },
@@ -198,7 +220,7 @@ export const ordemServicoRepository = {
       .rpc('calcular_tempo_total_os', {
         p_ordem_servico_id: ordemServicoId
       })
-    
+
     if (error) throw error
     return data || '0'
   },
@@ -229,7 +251,7 @@ export const ordemServicoRepository = {
       .eq('id', id)
       .select()
       .single()
-    
+
     if (error) throw error
 
     // Registrar no histórico manualmente se necessário
@@ -243,7 +265,7 @@ export const ordemServicoRepository = {
           criado_por: userData.id
         })
     }
-    
+
     return data as OrdemServico
   }
 }

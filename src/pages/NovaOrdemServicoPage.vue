@@ -24,13 +24,12 @@
           </label>
           <select 
             v-model="form.veiculo_id" 
-            :disabled="veiculos.isLoading?.value"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             required
           >
             <option value="">Selecione um veículo</option>
             <option 
-              v-for="veiculo in veiculosAtivos" 
+              v-for="veiculo in veiculos" 
               :key="veiculo.id" 
               :value="veiculo.id"
             >
@@ -94,17 +93,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVeiculos } from '../features/veiculos/hooks/useVeiculos'
 import { useOrdensServico } from '../features/ordens-servico/hooks/useOrdensServico'
 import { useAuth } from '../composables/useAuth'
+import { useAuthStore } from '../features/auth/stores/authStore'
+import { veiculoRepository } from '../services/repositories/veiculoRepository'
 import BaseButton from '../shared/ui/BaseButton.vue'
 
 const router = useRouter()
-const { veiculos } = useVeiculos()
 const { createOrdemServico } = useOrdensServico()
 const { userName, userCargoDisplay } = useAuth()
+const authStore = useAuthStore()
+
+// Estado local para veículos (igual à página de estatísticas)
+const veiculos = ref<any[]>([])
 
 // Form data
 const form = ref({
@@ -121,11 +124,6 @@ const errors = ref({
 })
 
 // Computed
-const veiculosAtivos = computed(() => {
-  if (!veiculos.data?.value) return []
-  return veiculos.data.value.filter(v => v.status === 'ativo') || []
-})
-
 const isFormValid = computed(() => {
   return form.value.veiculo_id && 
          form.value.problema_reportado.trim()
@@ -169,4 +167,22 @@ async function criarOS() {
     loading.value = false
   }
 }
+
+// Carregar dados iniciais (igual à página de estatísticas)
+onMounted(async () => {
+  try {
+    // Aguardar autenticação ser inicializada
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // Buscar veículos diretamente do repository
+    const regionalId = authStore.userRegionalData?.id || authStore.userData?.regional_id
+    if (regionalId) {
+      const veiculosData = await veiculoRepository.findAll(regionalId)
+      veiculos.value = veiculosData || []
+      console.log('Veículos carregados:', veiculos.value)
+    }
+  } catch (error) {
+    console.error('Erro ao carregar veículos:', error)
+  }
+})
 </script>
