@@ -4,6 +4,10 @@
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
       <div class="mb-6 lg:mb-0">
         <div class="flex items-center space-x-4 mb-2">
+          <div class="w-1 h-12 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+          <div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">Gestão de supervisores e coordenadores</h1>
+          </div>
         </div>
       </div>
       <div class="flex flex-col sm:flex-row gap-4">

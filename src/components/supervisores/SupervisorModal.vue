@@ -214,21 +214,27 @@ const loadRegionais = async () => {
 // Carregar cargos do setor Operação
 const loadCargos = async () => {
   try {
-    // Primeiro buscar o setor Operação
-    const { data: setorOperacao } = await supabase
-      .from('setores')
-      .select('id')
-      .eq('sigla', 'OPERACAO')
-      .single()
+    // Buscar todos os cargos
+    const { data: cargosData } = await supabase
+      .from('cargos')
+      .select('id, nome, setor_id')
+      .order('nome')
 
-    if (setorOperacao) {
-      const { data: cargosData } = await supabase
-        .from('cargos')
-        .select('id, nome')
-        .eq('setor_id', setorOperacao.id)
-        .order('nome')
+    if (cargosData) {
+      // Buscar setores
+      const { data: setoresData } = await supabase
+        .from('setores')
+        .select('id, sigla')
 
-      cargos.value = cargosData || []
+      if (setoresData) {
+        // Filtrar apenas cargos do setor Operação
+        const cargosOperacao = cargosData.filter(cargo => {
+          const setor = setoresData.find(s => s.id === cargo.setor_id)
+          return setor?.sigla === 'OPERACAO'
+        })
+
+        cargos.value = cargosOperacao
+      }
     }
   } catch (err) {
     console.error('Erro ao carregar cargos:', err)

@@ -1,6 +1,5 @@
 import { supabase } from './supabase'
 
-// Interfaces
 export interface Supervisor {
   id: string
   nome: string
@@ -44,35 +43,7 @@ export class SupervisorService {
    */
   static async getAll(): Promise<Supervisor[]> {
     try {
-      // Primeiro, buscar o setor Operação
-      const { data: setorOperacao, error: setorError } = await supabase
-        .from('setores')
-        .select('id')
-        .eq('sigla', 'OPERACAO')
-        .single()
-
-      if (setorError || !setorOperacao) {
-        console.error('Erro ao buscar setor Operação:', setorError)
-        throw new Error('Setor Operação não encontrado')
-      }
-
-      // Buscar cargos do setor Operação
-      const { data: cargos, error: cargosError } = await supabase
-        .from('cargos')
-        .select('id, nome')
-        .eq('setor_id', setorOperacao.id)
-
-      if (cargosError) {
-        console.error('Erro ao buscar cargos:', cargosError)
-        throw cargosError
-      }
-
-      if (!cargos || cargos.length === 0) {
-        return []
-      }
-
-      // Buscar usuários com esses cargos
-      const cargosIds = cargos.map(c => c.id)
+      // Buscar todos os usuários
       const { data: usuarios, error: usuariosError } = await supabase
         .from('usuarios')
         .select(`
@@ -85,7 +56,6 @@ export class SupervisorService {
           ativo,
           created_at
         `)
-        .in('cargo_id', cargosIds)
         .order('nome')
 
       if (usuariosError) {
@@ -93,28 +63,96 @@ export class SupervisorService {
         throw usuariosError
       }
 
-      if (!usuarios) return []
+      if (!usuarios || usuarios.length === 0) {
+        return []
+      }
 
-      // Buscar regionais
-      const { data: regionais, error: regionaisError } = await supabase
-        .from('regionais')
+      // Buscar todos os cargos
+      const { data: cargos, error: cargosError } = await supabase
+        .from('cargos')
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          setor_id
         `)
 
-      if (regionaisError) {
-        console.error('Erro ao buscar regionais:', regionaisError)
-        throw regionaisError
+      if (cargosError) {
+        console.error('Erro ao buscar cargos:', cargosError)
+        throw cargosError
+      }
+
+      // Buscar todos os setores
+      const { data: setores, error: setoresError } = await supabase
+        .from('setores')
+        .select(`
+          id,
+          sigla
+        `)
+
+      if (setoresError) {
+        console.error('Erro ao buscar setores:', setoresError)
+        throw setoresError
+      }
+
+      // Filtrar apenas usuários do setor Operação
+      const supervisores = usuarios.filter(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
+        const setor = setores?.find(s => s.id === cargo?.setor_id)
+        return setor?.sigla === 'OPERACAO'
+      })
+
+      if (supervisores.length === 0) {
+        return []
+      }
+
+      // Buscar regionais para os supervisores
+      const regionalIds = [...new Set(supervisores.map(s => s.regional_id).filter(Boolean))]
+      
+      let regionais: any[] = []
+      if (regionalIds.length > 0) {
+        const { data: regionaisData, error: regionaisError } = await supabase
+          .from('regionais')
+          .select(`
+            id,
+            nome,
+            estado_id
+          `)
+          .in('id', regionalIds)
+
+        if (regionaisError) {
+          console.error('Erro ao buscar regionais:', regionaisError)
+          throw regionaisError
+        }
+
+        regionais = regionaisData || []
+      }
+
+      // Buscar estados para as regionais
+      const estadoIds = [...new Set(regionais.map(r => r.estado_id).filter(Boolean))]
+      
+      let estados: any[] = []
+      if (estadoIds.length > 0) {
+        const { data: estadosData, error: estadosError } = await supabase
+          .from('estados')
+          .select(`
+            id,
+            nome
+          `)
+          .in('id', estadoIds)
+
+        if (estadosError) {
+          console.error('Erro ao buscar estados:', estadosError)
+          throw estadosError
+        }
+
+        estados = estadosData || []
       }
 
       // Mapear dados
-      return usuarios.map(usuario => {
-        const cargo = cargos.find(c => c.id === usuario.cargo_id)
-        const regional = regionais?.find(r => r.id === usuario.regional_id)
-        const estado = regional?.estados
+      return supervisores.map(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
+        const regional = regionais.find(r => r.id === usuario.regional_id)
+        const estado = regional ? estados.find(e => e.id === regional.estado_id) : null
 
         return {
           id: usuario.id,
@@ -161,49 +199,37 @@ export class SupervisorService {
         .eq('id', id)
         .single()
 
-      if (usuarioError) {
-        console.error('Erro ao buscar usuário:', usuarioError)
-        throw usuarioError
-      }
-
-      if (!usuario) return null
-
-      // Verificar se é do setor Operação
-      const { data: setorOperacao } = await supabase
-        .from('setores')
-        .select('id')
-        .eq('sigla', 'OPERACAO')
-        .single()
-
-      if (!setorOperacao) {
+      if (usuarioError || !usuario) {
         return null
       }
 
-      const { data: cargo, error: cargoError } = await supabase
+      // Buscar cargo
+      const { data: cargo } = await supabase
         .from('cargos')
         .select('nome')
         .eq('id', usuario.cargo_id)
-        .eq('setor_id', setorOperacao.id)
         .single()
 
-      if (cargoError || !cargo) {
-        return null // Não é do setor Operação
-      }
-
       // Buscar regional
-      const { data: regional, error: regionalError } = await supabase
+      const { data: regional } = await supabase
         .from('regionais')
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          estado_id
         `)
         .eq('id', usuario.regional_id)
         .single()
 
-      if (regionalError) {
-        console.error('Erro ao buscar regional:', regionalError)
+      // Buscar estado
+      let estado = null
+      if (regional?.estado_id) {
+        const { data: estadoData } = await supabase
+          .from('estados')
+          .select('id, nome')
+          .eq('id', regional.estado_id)
+          .single()
+        estado = estadoData
       }
 
       return {
@@ -211,16 +237,16 @@ export class SupervisorService {
         nome: usuario.nome,
         email: usuario.email,
         matricula: usuario.matricula,
-        cargo: cargo.nome,
+        cargo: cargo?.nome || 'N/A',
         regional_id: usuario.regional_id,
         ativo: usuario.ativo,
         criado_em: usuario.created_at,
         regional: regional ? {
           id: regional.id,
           nome: regional.nome,
-          estado: regional.estados ? {
-            id: regional.estados.id,
-            nome: regional.estados.nome
+          estado: estado ? {
+            id: estado.id,
+            nome: estado.nome
           } : undefined
         } : undefined
       }
@@ -265,11 +291,21 @@ export class SupervisorService {
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          estado_id
         `)
         .eq('id', data.regional_id)
         .single()
+
+      // Buscar estado
+      let estado = null
+      if (regional?.estado_id) {
+        const { data: estadoData } = await supabase
+          .from('estados')
+          .select('id, nome')
+          .eq('id', regional.estado_id)
+          .single()
+        estado = estadoData
+      }
 
       return {
         id: data.id,
@@ -283,9 +319,9 @@ export class SupervisorService {
         regional: regional ? {
           id: regional.id,
           nome: regional.nome,
-          estado: regional.estados ? {
-            id: regional.estados.id,
-            nome: regional.estados.nome
+          estado: estado ? {
+            id: estado.id,
+            nome: estado.nome
           } : undefined
         } : undefined
       }
@@ -331,11 +367,21 @@ export class SupervisorService {
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          estado_id
         `)
         .eq('id', data.regional_id)
         .single()
+
+      // Buscar estado
+      let estado = null
+      if (regional?.estado_id) {
+        const { data: estadoData } = await supabase
+          .from('estados')
+          .select('id, nome')
+          .eq('id', regional.estado_id)
+          .single()
+        estado = estadoData
+      }
 
       return {
         id: data.id,
@@ -349,9 +395,9 @@ export class SupervisorService {
         regional: regional ? {
           id: regional.id,
           nome: regional.nome,
-          estado: regional.estados ? {
-            id: regional.estados.id,
-            nome: regional.estados.nome
+          estado: estado ? {
+            id: estado.id,
+            nome: estado.nome
           } : undefined
         } : undefined
       }
@@ -364,7 +410,7 @@ export class SupervisorService {
   /**
    * Remove um supervisor
    */
-  static async delete(id: string): Promise<void> {
+  static async remove(id: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('usuarios')
@@ -386,35 +432,7 @@ export class SupervisorService {
    */
   static async getByRegional(regionalId: string): Promise<Supervisor[]> {
     try {
-      // Primeiro, buscar o setor Operação
-      const { data: setorOperacao, error: setorError } = await supabase
-        .from('setores')
-        .select('id')
-        .eq('sigla', 'OPERACAO')
-        .single()
-
-      if (setorError || !setorOperacao) {
-        console.error('Erro ao buscar setor Operação:', setorError)
-        throw new Error('Setor Operação não encontrado')
-      }
-
-      // Buscar cargos do setor Operação
-      const { data: cargos, error: cargosError } = await supabase
-        .from('cargos')
-        .select('id, nome')
-        .eq('setor_id', setorOperacao.id)
-
-      if (cargosError) {
-        console.error('Erro ao buscar cargos:', cargosError)
-        throw cargosError
-      }
-
-      if (!cargos || cargos.length === 0) {
-        return []
-      }
-
-      // Buscar usuários da regional com esses cargos
-      const cargosIds = cargos.map(c => c.id)
+      // Buscar usuários da regional
       const { data: usuarios, error: usuariosError } = await supabase
         .from('usuarios')
         .select(`
@@ -428,7 +446,6 @@ export class SupervisorService {
           created_at
         `)
         .eq('regional_id', regionalId)
-        .in('cargo_id', cargosIds)
         .order('nome')
 
       if (usuariosError) {
@@ -436,7 +453,36 @@ export class SupervisorService {
         throw usuariosError
       }
 
-      if (!usuarios) return []
+      if (!usuarios || usuarios.length === 0) {
+        return []
+      }
+
+      // Buscar cargos
+      const { data: cargos, error: cargosError } = await supabase
+        .from('cargos')
+        .select(`
+          id,
+          nome,
+          setor_id
+        `)
+
+      if (cargosError) {
+        console.error('Erro ao buscar cargos:', cargosError)
+        throw cargosError
+      }
+
+      // Buscar setores
+      const { data: setores, error: setoresError } = await supabase
+        .from('setores')
+        .select(`
+          id,
+          sigla
+        `)
+
+      if (setoresError) {
+        console.error('Erro ao buscar setores:', setoresError)
+        throw setoresError
+      }
 
       // Buscar regional
       const { data: regional, error: regionalError } = await supabase
@@ -444,19 +490,37 @@ export class SupervisorService {
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          estado_id
         `)
         .eq('id', regionalId)
         .single()
 
       if (regionalError) {
         console.error('Erro ao buscar regional:', regionalError)
+        throw regionalError
       }
 
+      // Buscar estado
+      let estado = null
+      if (regional?.estado_id) {
+        const { data: estadoData } = await supabase
+          .from('estados')
+          .select('id, nome')
+          .eq('id', regional.estado_id)
+          .single()
+        estado = estadoData
+      }
+
+      // Filtrar apenas usuários do setor Operação
+      const supervisores = usuarios.filter(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
+        const setor = setores?.find(s => s.id === cargo?.setor_id)
+        return setor?.sigla === 'OPERACAO'
+      })
+
       // Mapear dados
-      return usuarios.map(usuario => {
-        const cargo = cargos.find(c => c.id === usuario.cargo_id)
+      return supervisores.map(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
 
         return {
           id: usuario.id,
@@ -470,9 +534,9 @@ export class SupervisorService {
           regional: regional ? {
             id: regional.id,
             nome: regional.nome,
-            estado: regional.estados ? {
-              id: regional.estados.id,
-              nome: regional.estados.nome
+            estado: estado ? {
+              id: estado.id,
+              nome: estado.nome
             } : undefined
           } : undefined
         }
@@ -484,39 +548,11 @@ export class SupervisorService {
   }
 
   /**
-   * Busca apenas supervisores ativos
+   * Busca supervisores ativos
    */
   static async getActive(): Promise<Supervisor[]> {
     try {
-      // Primeiro, buscar o setor Operação
-      const { data: setorOperacao, error: setorError } = await supabase
-        .from('setores')
-        .select('id')
-        .eq('sigla', 'OPERACAO')
-        .single()
-
-      if (setorError || !setorOperacao) {
-        console.error('Erro ao buscar setor Operação:', setorError)
-        throw new Error('Setor Operação não encontrado')
-      }
-
-      // Buscar cargos do setor Operação
-      const { data: cargos, error: cargosError } = await supabase
-        .from('cargos')
-        .select('id, nome')
-        .eq('setor_id', setorOperacao.id)
-
-      if (cargosError) {
-        console.error('Erro ao buscar cargos:', cargosError)
-        throw cargosError
-      }
-
-      if (!cargos || cargos.length === 0) {
-        return []
-      }
-
-      // Buscar usuários ativos com esses cargos
-      const cargosIds = cargos.map(c => c.id)
+      // Buscar usuários ativos
       const { data: usuarios, error: usuariosError } = await supabase
         .from('usuarios')
         .select(`
@@ -530,7 +566,6 @@ export class SupervisorService {
           created_at
         `)
         .eq('ativo', true)
-        .in('cargo_id', cargosIds)
         .order('nome')
 
       if (usuariosError) {
@@ -538,28 +573,92 @@ export class SupervisorService {
         throw usuariosError
       }
 
-      if (!usuarios) return []
+      if (!usuarios || usuarios.length === 0) {
+        return []
+      }
 
-      // Buscar regionais
-      const { data: regionais, error: regionaisError } = await supabase
-        .from('regionais')
+      // Buscar cargos
+      const { data: cargos, error: cargosError } = await supabase
+        .from('cargos')
         .select(`
           id,
           nome,
-          estado_id,
-          estados(id, nome)
+          setor_id
         `)
 
-      if (regionaisError) {
-        console.error('Erro ao buscar regionais:', regionaisError)
-        throw regionaisError
+      if (cargosError) {
+        console.error('Erro ao buscar cargos:', cargosError)
+        throw cargosError
       }
 
+      // Buscar setores
+      const { data: setores, error: setoresError } = await supabase
+        .from('setores')
+        .select(`
+          id,
+          sigla
+        `)
+
+      if (setoresError) {
+        console.error('Erro ao buscar setores:', setoresError)
+        throw setoresError
+      }
+
+      // Buscar regionais
+      const regionalIds = [...new Set(usuarios.map(u => u.regional_id).filter(Boolean))]
+      
+      let regionais: any[] = []
+      if (regionalIds.length > 0) {
+        const { data: regionaisData, error: regionaisError } = await supabase
+          .from('regionais')
+          .select(`
+            id,
+            nome,
+            estado_id
+          `)
+          .in('id', regionalIds)
+
+        if (regionaisError) {
+          console.error('Erro ao buscar regionais:', regionaisError)
+          throw regionaisError
+        }
+
+        regionais = regionaisData || []
+      }
+
+      // Buscar estados
+      const estadoIds = [...new Set(regionais.map(r => r.estado_id).filter(Boolean))]
+      
+      let estados: any[] = []
+      if (estadoIds.length > 0) {
+        const { data: estadosData, error: estadosError } = await supabase
+          .from('estados')
+          .select(`
+            id,
+            nome
+          `)
+          .in('id', estadoIds)
+
+        if (estadosError) {
+          console.error('Erro ao buscar estados:', estadosError)
+          throw estadosError
+        }
+
+        estados = estadosData || []
+      }
+
+      // Filtrar apenas usuários do setor Operação
+      const supervisores = usuarios.filter(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
+        const setor = setores?.find(s => s.id === cargo?.setor_id)
+        return setor?.sigla === 'OPERACAO'
+      })
+
       // Mapear dados
-      return usuarios.map(usuario => {
-        const cargo = cargos.find(c => c.id === usuario.cargo_id)
-        const regional = regionais?.find(r => r.id === usuario.regional_id)
-        const estado = regional?.estados
+      return supervisores.map(usuario => {
+        const cargo = cargos?.find(c => c.id === usuario.cargo_id)
+        const regional = regionais.find(r => r.id === usuario.regional_id)
+        const estado = regional ? estados.find(e => e.id === regional.estado_id) : null
 
         return {
           id: usuario.id,
